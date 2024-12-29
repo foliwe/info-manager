@@ -7,7 +7,10 @@ import Modal from '@/components/Modal';
 import { Website } from '@/types';
 import { PostgrestError } from '@supabase/supabase-js';
 
-const emptyWebsite: Omit<Website, 'id' | 'created_at' | 'updated_at' | 'user_id'> = {
+// Type for the form state without database-managed fields
+type WebsiteFormData = Omit<Website, 'id' | 'created_at' | 'updated_at' | 'user_id'>;
+
+const emptyWebsite: WebsiteFormData = {
   website: '',
   url: '',
   username: '',
@@ -23,7 +26,7 @@ export default function WebsitePage() {
   const [showForm, setShowForm] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingWebsite, setEditingWebsite] = useState<Omit<Website, 'id' | 'created_at' | 'updated_at' | 'user_id'>>(emptyWebsite);
+  const [editingWebsite, setEditingWebsite] = useState<WebsiteFormData & { id?: number }>(emptyWebsite);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -43,7 +46,7 @@ export default function WebsitePage() {
         .from('websites')
         .select('*')
         .eq('user_id', user.id)
-        .order('id', { ascending: true });
+        .order('website', { ascending: true });
 
       if (error) throw error;
       setWebsites(data || []);
@@ -60,9 +63,7 @@ export default function WebsitePage() {
     e.preventDefault();
     if (!user) return;
 
-    setError(null);
-
-    if (!editingWebsite.website || !editingWebsite.url) {
+    if (!editingWebsite.website.trim() || !editingWebsite.url.trim()) {
       setError('Website name and URL are required');
       return;
     }
@@ -70,10 +71,13 @@ export default function WebsitePage() {
     try {
       setIsSubmitting(true);
       setError(null);
-      
+
       const { error } = await supabase
         .from('websites')
-        .insert([{ ...editingWebsite, user_id: user.id }]);
+        .insert([{
+          ...editingWebsite,
+          user_id: user.id,
+        }]);
 
       if (error) throw error;
 
@@ -90,9 +94,9 @@ export default function WebsitePage() {
   };
 
   const handleUpdate = async () => {
-    if (!user || !editingWebsite) return;
+    if (!user || !editingWebsite.id) return;
 
-    if (!editingWebsite.website || !editingWebsite.url) {
+    if (!editingWebsite.website.trim() || !editingWebsite.url.trim()) {
       setError('Website name and URL are required');
       return;
     }
@@ -100,6 +104,7 @@ export default function WebsitePage() {
     try {
       setIsSubmitting(true);
       setError(null);
+
       const { error } = await supabase
         .from('websites')
         .update({
@@ -124,6 +129,30 @@ export default function WebsitePage() {
     }
   };
 
+  const handleEdit = (website: Website) => {
+    setEditingWebsite({
+      id: website.id,
+      website: website.website,
+      url: website.url,
+      username: website.username,
+      password: website.password,
+      description: website.description || '',
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleView = (website: Website) => {
+    setEditingWebsite({
+      id: website.id,
+      website: website.website,
+      url: website.url,
+      username: website.username,
+      password: website.password,
+      description: website.description || '',
+    });
+    setIsViewModalOpen(true);
+  };
+
   const handleDelete = async (id: number) => {
     if (!user) return;
     
@@ -146,7 +175,7 @@ export default function WebsitePage() {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div className="text-center">Loading...</div>;
   }
 
   return (
@@ -206,19 +235,13 @@ export default function WebsitePage() {
                 <td className="px-6 py-4 whitespace-nowrap">{website.username}</td>
                 <td className="px-6 py-4 whitespace-nowrap space-x-2">
                   <button
-                    onClick={() => {
-                      setEditingWebsite(website);
-                      setIsViewModalOpen(true);
-                    }}
+                    onClick={() => handleView(website)}
                     className="text-blue-600 hover:text-blue-900"
                   >
                     <EyeIcon className="h-5 w-5" />
                   </button>
                   <button
-                    onClick={() => {
-                      setEditingWebsite(website);
-                      setIsEditModalOpen(true);
-                    }}
+                    onClick={() => handleEdit(website)}
                     className="text-green-600 hover:text-green-900"
                   >
                     <PencilIcon className="h-5 w-5" />

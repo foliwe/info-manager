@@ -7,7 +7,10 @@ import Modal from '@/components/Modal';
 import { Category } from '@/types';
 import { PostgrestError } from '@supabase/supabase-js';
 
-const emptyCategory: Omit<Category, 'id' | 'created_at' | 'updated_at'> = {
+// Type for the form state without database-managed fields
+type CategoryFormData = Omit<Category, 'id' | 'created_at' | 'updated_at'>;
+
+const emptyCategory: CategoryFormData = {
   name: '',
 };
 
@@ -18,7 +21,7 @@ export default function CategoriesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Omit<Category, 'id' | 'created_at' | 'updated_at'>>(emptyCategory);
+  const [editingCategory, setEditingCategory] = useState<CategoryFormData & { id?: number }>(emptyCategory);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -53,7 +56,7 @@ export default function CategoriesPage() {
     e.preventDefault();
     if (!user) return;
 
-    if (!editingCategory.name) {
+    if (!editingCategory.name.trim()) {
       setError('Category name is required');
       return;
     }
@@ -61,10 +64,10 @@ export default function CategoriesPage() {
     try {
       setIsSubmitting(true);
       setError(null);
-      
+
       const { error } = await supabase
         .from('categories')
-        .insert([editingCategory]);
+        .insert([{ name: editingCategory.name }]);
 
       if (error) throw error;
 
@@ -81,9 +84,9 @@ export default function CategoriesPage() {
   };
 
   const handleUpdate = async () => {
-    if (!user || !editingCategory) return;
+    if (!user || !editingCategory.id) return;
 
-    if (!editingCategory.name) {
+    if (!editingCategory.name.trim()) {
       setError('Category name is required');
       return;
     }
@@ -91,11 +94,10 @@ export default function CategoriesPage() {
     try {
       setIsSubmitting(true);
       setError(null);
+
       const { error } = await supabase
         .from('categories')
-        .update({
-          name: editingCategory.name,
-        })
+        .update({ name: editingCategory.name })
         .eq('id', editingCategory.id);
 
       if (error) throw error;
@@ -108,6 +110,14 @@ export default function CategoriesPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEdit = (category: Category) => {
+    setEditingCategory({
+      id: category.id,
+      name: category.name
+    });
+    setIsEditModalOpen(true);
   };
 
   const handleDelete = async (id: number) => {
@@ -151,65 +161,69 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-xl font-semibold text-gray-900">Categories</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            A list of all categories for organizing your tools.
-          </p>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button
-            onClick={() => {
-              setEditingCategory(emptyCategory);
-              setShowForm(true);
-            }}
-            className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto"
-          >
-            Add Category
-          </button>
-        </div>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-semibold text-gray-900">Categories</h1>
+        <button
+          onClick={() => {
+            setEditingCategory(emptyCategory);
+            setShowForm(true);
+          }}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          Add Category
+        </button>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-300">
-          <thead>
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {categories.map((category) => (
-              <tr key={category.id}>
-                <td className="px-6 py-4 whitespace-nowrap">{category.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap space-x-2">
-                  <button
-                    onClick={() => {
-                      setEditingCategory(category);
-                      setIsEditModalOpen(true);
-                    }}
-                    className="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    <PencilIcon className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(category.id)}
-                    className="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                  >
-                    <TrashIcon className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex flex-col">
+        <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+          <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+            <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {categories.map((category) => (
+                    <tr key={category.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">{category.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap space-x-2">
+                        <button
+                          onClick={() => handleEdit(category)}
+                          className="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          <PencilIcon className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(category.id)}
+                          className="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        >
+                          <TrashIcon className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Add Category Modal */}
       <Modal
         isOpen={showForm}
-        onClose={() => setShowForm(false)}
+        onClose={() => {
+          setShowForm(false);
+          setEditingCategory(emptyCategory);
+          setError(null);
+        }}
         title="Add Category"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -228,7 +242,11 @@ export default function CategoriesPage() {
           <div className="flex justify-end space-x-3">
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={() => {
+                setShowForm(false);
+                setEditingCategory(emptyCategory);
+                setError(null);
+              }}
               className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Cancel
@@ -247,16 +265,20 @@ export default function CategoriesPage() {
       {/* Edit Category Modal */}
       <Modal
         isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingCategory(emptyCategory);
+          setError(null);
+        }}
         title="Edit Category"
       >
-        <div className="space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); handleUpdate(); }} className="space-y-4">
           <div>
             <label htmlFor="edit-name" className="block text-sm font-medium text-gray-700">Name</label>
             <input
               type="text"
               id="edit-name"
-              name="edit-name"
+              name="name"
               value={editingCategory.name}
               onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
@@ -266,21 +288,24 @@ export default function CategoriesPage() {
           <div className="flex justify-end space-x-3">
             <button
               type="button"
-              onClick={() => setIsEditModalOpen(false)}
+              onClick={() => {
+                setIsEditModalOpen(false);
+                setEditingCategory(emptyCategory);
+                setError(null);
+              }}
               className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Cancel
             </button>
             <button
-              type="button"
-              onClick={handleUpdate}
+              type="submit"
               disabled={isSubmitting}
               className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               {isSubmitting ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
-        </div>
+        </form>
       </Modal>
     </div>
   );

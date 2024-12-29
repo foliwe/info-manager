@@ -7,13 +7,17 @@ import Modal from '@/components/Modal';
 import { Tool, Category } from '@/types';
 import { PostgrestError } from '@supabase/supabase-js';
 
-const emptyTool: Omit<Tool, 'id' | 'created_at' | 'updated_at' | 'user_id'> = {
+// Type for the form state without database-managed fields
+type ToolFormData = Omit<Tool, 'id' | 'created_at' | 'updated_at' | 'user_id'>;
+
+const emptyTool: ToolFormData = {
   name: '',
   description: '',
   url: '',
   login_details: '',
   password: '',
   category_id: undefined,
+  category: undefined,
 };
 
 export default function ToolsPage() {
@@ -25,7 +29,7 @@ export default function ToolsPage() {
   const [showForm, setShowForm] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [editingTool, setEditingTool] = useState(emptyTool);
+  const [editingTool, setEditingTool] = useState<ToolFormData & { id?: number }>(emptyTool);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -46,30 +50,12 @@ export default function ToolsPage() {
       // First fetch tools
       const { data: toolsData, error: toolsError } = await supabase
         .from('tools')
-        .select('*')
+        .select('*, category:categories(*)')
         .eq('user_id', user.id)
         .order('name', { ascending: true });
 
       if (toolsError) throw toolsError;
-
-      // Then fetch categories for the tools that have category_id
-      const toolsWithCategories = await Promise.all((toolsData || []).map(async (tool) => {
-        if (tool.category_id) {
-          const { data: categoryData } = await supabase
-            .from('categories')
-            .select()
-            .eq('id', tool.category_id)
-            .single();
-          
-          return {
-            ...tool,
-            category: categoryData
-          };
-        }
-        return tool;
-      }));
-
-      setTools(toolsWithCategories);
+      setTools(toolsData || []);
     } catch (err) {
       const error = err as PostgrestError;
       console.error('Error fetching tools:', error);
@@ -80,6 +66,8 @@ export default function ToolsPage() {
   };
 
   const fetchCategories = async () => {
+    if (!user) return;
+
     try {
       const { data, error } = await supabase
         .from('categories')
@@ -99,20 +87,15 @@ export default function ToolsPage() {
     e.preventDefault();
     if (!user) return;
 
-    if (!editingTool.name) {
+    if (!editingTool.name.trim()) {
       setError('Tool name is required');
-      return;
-    }
-
-    if (editingTool.url && !isValidUrl(editingTool.url)) {
-      setError('Please enter a valid URL (must start with http:// or https://)');
       return;
     }
 
     try {
       setIsSubmitting(true);
       setError(null);
-      
+
       const { error } = await supabase
         .from('tools')
         .insert([{
@@ -121,12 +104,13 @@ export default function ToolsPage() {
         }]);
 
       if (error) throw error;
-      setShowForm(false);
+
       setEditingTool(emptyTool);
+      setShowForm(false);
       await fetchTools();
     } catch (err) {
       const error = err as PostgrestError;
-      console.error('Error creating tool:', error);
+      console.error('Error adding tool:', error);
       setError(error.message);
     } finally {
       setIsSubmitting(false);
@@ -134,21 +118,17 @@ export default function ToolsPage() {
   };
 
   const handleUpdate = async () => {
-    if (!user || !editingTool) return;
+    if (!user || !editingTool.id) return;
 
-    if (!editingTool.name) {
+    if (!editingTool.name.trim()) {
       setError('Tool name is required');
-      return;
-    }
-
-    if (editingTool.url && !isValidUrl(editingTool.url)) {
-      setError('Please enter a valid URL (must start with http:// or https://)');
       return;
     }
 
     try {
       setIsSubmitting(true);
       setError(null);
+
       const { error } = await supabase
         .from('tools')
         .update({
@@ -174,6 +154,34 @@ export default function ToolsPage() {
     }
   };
 
+  const handleEdit = (tool: Tool) => {
+    setEditingTool({
+      id: tool.id,
+      name: tool.name,
+      description: tool.description || '',
+      url: tool.url || '',
+      login_details: tool.login_details || '',
+      password: tool.password || '',
+      category_id: tool.category_id,
+      category: tool.category,
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleView = (tool: Tool) => {
+    setEditingTool({
+      id: tool.id,
+      name: tool.name,
+      description: tool.description || '',
+      url: tool.url || '',
+      login_details: tool.login_details || '',
+      password: tool.password || '',
+      category_id: tool.category_id,
+      category: tool.category,
+    });
+    setIsViewModalOpen(true);
+  };
+
   const handleDelete = async (id: number) => {
     if (!user) return;
     
@@ -192,15 +200,6 @@ export default function ToolsPage() {
       const error = err as PostgrestError;
       console.error('Error deleting tool:', error);
       setError(error.message);
-    }
-  };
-
-  const isValidUrl = (url: string) => {
-    try {
-      new URL(url);
-      return url.startsWith('http://') || url.startsWith('https://');
-    } catch {
-      return false;
     }
   };
 
@@ -282,20 +281,14 @@ export default function ToolsPage() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap space-x-2">
                   <button
-                    onClick={() => {
-                      setEditingTool(tool);
-                      setIsViewModalOpen(true);
-                    }}
+                    onClick={() => handleView(tool)}
                     className="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                     title="View Tool"
                   >
                     <EyeIcon className="h-4 w-4" aria-hidden="true" />
                   </button>
                   <button
-                    onClick={() => {
-                      setEditingTool(tool);
-                      setIsEditModalOpen(true);
-                    }}
+                    onClick={() => handleEdit(tool)}
                     className="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     <PencilIcon className="h-4 w-4" aria-hidden="true" />
