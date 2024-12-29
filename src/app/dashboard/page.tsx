@@ -114,59 +114,52 @@ export default function DashboardPage() {
         // Combine and sort activities
         const allActivities = [
           ...(emails.data?.map(email => ({
-            type: 'email' as const,
             id: email.id,
-            title: email.email,
+            type: 'email' as const,
+            action: email.created_at === email.updated_at ? ('created' as const) : ('updated' as const),
+            name: 'Email Template',
             description: email.description,
             created_at: email.created_at,
-            updated_at: email.updated_at,
-            action: email.created_at === email.updated_at ? 'created' : 'updated',
-            name: 'Email Template'
+            updated_at: email.updated_at
           })) || []),
           ...(websites.data?.map(website => ({
-            type: 'website' as const,
             id: website.id,
-            title: website.website,
+            type: 'website' as const,
+            action: website.created_at === website.updated_at ? ('created' as const) : ('updated' as const),
+            name: 'Website',
             description: website.description,
             url: website.url,
             created_at: website.created_at,
-            updated_at: website.updated_at,
-            action: website.created_at === website.updated_at ? 'created' : 'updated',
-            name: 'Website'
+            updated_at: website.updated_at
           })) || []),
           ...(domains.data?.map(domain => ({
-            type: 'domain' as const,
             id: domain.id,
-            title: domain.domain_name,
+            type: 'domain' as const,
+            action: domain.created_at === domain.updated_at ? ('created' as const) : ('updated' as const),
+            name: 'Domain',
             description: `Registrar: ${domain.registrar}`,
-            expire_date: domain.expire_date,
             created_at: domain.created_at,
-            updated_at: domain.updated_at,
-            action: domain.created_at === domain.updated_at ? 'created' : 'updated',
-            name: 'Domain'
+            updated_at: domain.updated_at
           })) || []),
           ...(tools.data?.map(tool => ({
-            type: 'tool' as const,
             id: tool.id,
-            title: tool.name,
+            type: 'tool' as const,
+            action: tool.created_at === tool.updated_at ? ('created' as const) : ('updated' as const),
+            name: 'Tool',
             description: tool.description,
             url: tool.url,
             created_at: tool.created_at,
-            updated_at: tool.updated_at,
-            action: tool.created_at === tool.updated_at ? 'created' : 'updated',
-            name: 'Tool'
+            updated_at: tool.updated_at
           })) || []),
           ...(projects.data?.map(project => ({
-            type: 'project' as const,
             id: project.id,
-            title: project.name,
+            type: 'project' as const,
+            action: project.created_at === project.updated_at ? ('created' as const) : ('updated' as const),
+            name: 'Project',
             description: project.description,
-            repository_url: project.repository_url,
-            live_url: project.live_url,
+            url: project.repository_url,
             created_at: project.created_at,
-            updated_at: project.updated_at,
-            action: project.created_at === project.updated_at ? 'created' : 'updated',
-            name: 'Project'
+            updated_at: project.updated_at
           })) || [])
         ].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
