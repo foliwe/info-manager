@@ -2,6 +2,10 @@
 
 import './globals.css';
 import SupabaseProvider from '@/providers/supabase-provider';
+import { useSupabase } from '@/providers/supabase-provider';
+import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function RootLayout({
   children,
