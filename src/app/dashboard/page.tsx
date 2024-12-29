@@ -183,7 +183,7 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 ">
         <div className="bg-white rounded-lg shadow p-6 animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/4"></div>
         </div>
@@ -215,10 +215,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-screen-2xl mx-auto mt-8">
       {/* Welcome Section */}
       <div className="bg-white overflow-hidden rounded-lg shadow">
-        <div className="px-4 py-5 sm:p-6">
+        <div className="px-4 py-5 sm:p-6 ">
           <div className="flex items-center">
             <UserCircleIcon className="h-8 w-8 text-gray-400" />
             <div className="ml-4">
@@ -294,14 +294,14 @@ export default function DashboardPage() {
                         </div>
                         {activity.url && (
                           <div>
-                            <a
+                            {/* <a
                               href={activity.url}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
                             >
                               View
-                            </a>
+                            </a> */}
                           </div>
                         )}
                       </div>

@@ -141,9 +141,9 @@ const Layout: FC<LayoutProps> = ({ children, navigation }) => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="flex h-screen">
+      <div className="flex h-screen ">
         {/* Sidebar */}
-        <div className="w-64 bg-white shadow-lg flex flex-col">
+        <div className="w-64 bg-white shadow-lg flex flex-col mt-8">
           <div className="flex h-16 items-center justify-center">
             <h1 className="text-xl font-bold text-gray-800">Info Manager</h1>
           </div>
