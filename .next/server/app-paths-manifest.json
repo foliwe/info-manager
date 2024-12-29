@@ -1,7 +1,13 @@
 {
+  "/auth/callback/route": "app/auth/callback/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/page": "app/page.js",
+  "/login/page": "app/login/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
   "/dashboard/domains/page": "app/dashboard/domains/page.js",
-  "/dashboard/email/page": "app/dashboard/email/page.js",
-  "/dashboard/projects/page": "app/dashboard/projects/page.js",
   "/dashboard/website/page": "app/dashboard/website/page.js",
-  "/dashboard/page": "app/dashboard/page.js"
+  "/dashboard/projects/page": "app/dashboard/projects/page.js",
+  "/dashboard/email/page": "app/dashboard/email/page.js",
+  "/dashboard/tools/page": "app/dashboard/tools/page.js",
+  "/dashboard/categories/page": "app/dashboard/categories/page.js"
 }

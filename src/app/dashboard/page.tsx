@@ -120,6 +120,8 @@ export default function DashboardPage() {
             description: email.description,
             created_at: email.created_at,
             updated_at: email.updated_at,
+            action: email.created_at === email.updated_at ? 'created' : 'updated',
+            name: 'Email Template'
           })) || []),
           ...(websites.data?.map(website => ({
             type: 'website' as const,
@@ -129,15 +131,19 @@ export default function DashboardPage() {
             url: website.url,
             created_at: website.created_at,
             updated_at: website.updated_at,
+            action: website.created_at === website.updated_at ? 'created' : 'updated',
+            name: 'Website'
           })) || []),
           ...(domains.data?.map(domain => ({
             type: 'domain' as const,
             id: domain.id,
             title: domain.domain_name,
-            description: `Expires: ${format(parseISO(domain.expire_date), 'MMM dd, yyyy')}`,
-            registrar: domain.registrar,
+            description: `Registrar: ${domain.registrar}`,
+            expire_date: domain.expire_date,
             created_at: domain.created_at,
             updated_at: domain.updated_at,
+            action: domain.created_at === domain.updated_at ? 'created' : 'updated',
+            name: 'Domain'
           })) || []),
           ...(tools.data?.map(tool => ({
             type: 'tool' as const,
@@ -147,6 +153,8 @@ export default function DashboardPage() {
             url: tool.url,
             created_at: tool.created_at,
             updated_at: tool.updated_at,
+            action: tool.created_at === tool.updated_at ? 'created' : 'updated',
+            name: 'Tool'
           })) || []),
           ...(projects.data?.map(project => ({
             type: 'project' as const,
@@ -157,6 +165,8 @@ export default function DashboardPage() {
             live_url: project.live_url,
             created_at: project.created_at,
             updated_at: project.updated_at,
+            action: project.created_at === project.updated_at ? 'created' : 'updated',
+            name: 'Project'
           })) || [])
         ].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
