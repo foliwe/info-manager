@@ -50,7 +50,10 @@ export default function ToolsPage() {
       // First fetch tools
       const { data: toolsData, error: toolsError } = await supabase
         .from('tools')
-        .select('*, category:categories(*)')
+        .select(`
+          *,
+          category:categories (*)
+        `)
         .eq('user_id', user.id)
         .order('name', { ascending: true });
 
@@ -85,7 +88,11 @@ export default function ToolsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    
+    if (!user || !user.id) {
+      setError('You must be logged in to add a tool');
+      return;
+    }
 
     if (!editingTool.name.trim()) {
       setError('Tool name is required');
@@ -96,14 +103,23 @@ export default function ToolsPage() {
       setIsSubmitting(true);
       setError(null);
 
+      // Remove the category field before insertion
+      const { category, ...toolData } = editingTool;
+
+      console.log('Current user ID:', user.id);
+      console.log('Tool data:', toolData);
+
       const { error } = await supabase
         .from('tools')
         .insert([{
-          ...editingTool,
+          ...toolData,
           user_id: user.id,
         }]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Insert error:', error);
+        throw error;
+      }
 
       setEditingTool(emptyTool);
       setShowForm(false);
@@ -118,7 +134,10 @@ export default function ToolsPage() {
   };
 
   const handleUpdate = async () => {
-    if (!user || !editingTool.id) return;
+    if (!user || !editingTool.id) {
+      setError('You must be logged in to edit a tool');
+      return;
+    }
 
     if (!editingTool.name.trim()) {
       setError('Tool name is required');
@@ -183,7 +202,10 @@ export default function ToolsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!user) return;
+    if (!user) {
+      setError('You must be logged in to delete a tool');
+      return;
+    }
     
     if (!confirm('Are you sure you want to delete this tool?')) return;
 
