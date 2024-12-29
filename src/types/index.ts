@@ -61,7 +61,7 @@ export type User = {
 
 export type Activity = {
   id: number;
-  type: 'email' | 'website' | 'project' | 'tool';
+  type: 'email' | 'website' | 'project' | 'tool' | 'domain';
   action: 'created' | 'updated' | 'deleted';
   name: string;
   description?: string;

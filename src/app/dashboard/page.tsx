@@ -284,7 +284,7 @@ export default function DashboardPage() {
                           {activity.type === 'tool' && <WrenchScrewdriverIcon className="h-5 w-5 text-orange-500" />}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-gray-900">{activity.title}</p>
+                          <p className="truncate text-sm font-medium text-gray-900">{activity.name}</p>
                           {activity.description && (
                             <p className="truncate text-sm text-gray-500">{activity.description}</p>
                           )}
