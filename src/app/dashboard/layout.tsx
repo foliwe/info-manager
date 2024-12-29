@@ -7,12 +7,14 @@ import {
   FolderIcon,
   HomeIcon,
   WrenchScrewdriverIcon,
+  GlobeAmericasIcon,
 } from '@heroicons/react/24/outline';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
   { name: 'Emails', href: '/dashboard/email', icon: EnvelopeIcon },
   { name: 'Websites', href: '/dashboard/website', icon: GlobeAltIcon },
+  { name: 'Domains', href: '/dashboard/domains', icon: GlobeAmericasIcon },
   { name: 'Projects', href: '/dashboard/projects', icon: FolderIcon },
   { name: 'Tools', href: '/dashboard/tools', icon: WrenchScrewdriverIcon },
 ];

@@ -1,9 +1,6 @@
 'use client';
 
 import './globals.css';
-import { useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { useSupabase } from '@/providers/supabase-provider';
 import SupabaseProvider from '@/providers/supabase-provider';
 
 export default function RootLayout({
@@ -12,12 +9,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full bg-gray-50">
+    <html lang="en" className="h-full bg-gray-50" suppressHydrationWarning>
       <head>
         <title>Info Manager</title>
         <meta name="description" content="Personal Information Manager" />
       </head>
-      <body className="h-full">
+      <body className="h-full" suppressHydrationWarning>
         <SupabaseProvider>
           {children}
         </SupabaseProvider>

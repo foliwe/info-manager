@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSupabase } from '@/providers/supabase-provider';
-import { PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, TrashIcon, EyeIcon, LinkIcon } from '@heroicons/react/24/outline';
 import Modal from '@/components/Modal';
 import { Project } from '@/types';
 import { PostgrestError } from '@supabase/supabase-js';
@@ -59,40 +59,34 @@ export default function ProjectsPage() {
     e.preventDefault();
     if (!user) return;
 
-    if (!editingProject.name || !editingProject.description) {
-      setError('Project name and description are required');
-      return;
-    }
-
     try {
       setIsSubmitting(true);
       setError(null);
-      
-      if (isEditing) {
-        // Update existing project
+
+      if (isEditing && currentProjectId) {
         const { error } = await supabase
           .from('projects')
           .update({
-            name: editingProject.name,
-            description: editingProject.description,
-            repository_url: editingProject.repository_url,
-            live_url: editingProject.live_url
+            ...editingProject,
+            updated_at: new Date().toISOString(),
           })
-          .eq('id', currentProjectId);
+          .eq('id', currentProjectId)
+          .eq('user_id', user.id);
 
         if (error) throw error;
       } else {
-        // Create new project
-        const { error } = await supabase
-          .from('projects')
-          .insert([{ ...editingProject, user_id: user.id }]);
+        const { error } = await supabase.from('projects').insert({
+          ...editingProject,
+          user_id: user.id,
+        });
 
         if (error) throw error;
       }
 
-      setEditingProject(emptyProject);
       setShowForm(false);
+      setEditingProject(emptyProject);
       setIsEditing(false);
+      setCurrentProjectId(null);
       await fetchProjects();
     } catch (err) {
       const error = err as PostgrestError;
@@ -103,46 +97,28 @@ export default function ProjectsPage() {
     }
   };
 
-  const handleUpdate = async (project: Project) => {
-    if (!user) return;
+  const handleEdit = (project: Project) => {
+    setEditingProject({
+      name: project.name,
+      description: project.description,
+      repository_url: project.repository_url,
+      live_url: project.live_url,
+    });
+    setCurrentProjectId(project.id);
+    setIsEditing(true);
+    setShowForm(true);
+  };
 
-    if (!project.name || !project.description) {
-      setError('Project name and description are required');
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      setError(null);
-      const { error } = await supabase
-        .from('projects')
-        .update({
-          name: project.name,
-          description: project.description,
-          repository_url: project.repository_url,
-          live_url: project.live_url,
-        })
-        .eq('id', project.id)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-      setShowForm(false);
-      await fetchProjects();
-    } catch (err) {
-      const error = err as PostgrestError;
-      console.error('Error updating project:', error);
-      setError(error.message);
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleView = (project: Project) => {
+    setEditingProject(project);
+    setIsViewModalOpen(true);
   };
 
   const handleDelete = async (id: number) => {
-    if (!user) return;
-    
-    if (!confirm('Are you sure you want to delete this project?')) return;
+    if (!user || !window.confirm('Are you sure you want to delete this project?')) return;
 
     try {
+      setError(null);
       const { error } = await supabase
         .from('projects')
         .delete()
@@ -159,114 +135,98 @@ export default function ProjectsPage() {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Projects</h2>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
         <button
           onClick={() => {
             setEditingProject(emptyProject);
             setIsEditing(false);
+            setCurrentProjectId(null);
             setShowForm(true);
           }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
         >
           Add Project
         </button>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-300">
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
+
+      <div className="bg-white shadow-md rounded my-6">
+        <table className="min-w-full table-auto">
           <thead>
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Repository</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Live URL</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+              <th className="py-3 px-6 text-left">Name</th>
+              <th className="py-3 px-6 text-left">Description</th>
+              <th className="py-3 px-6 text-left">Links</th>
+              <th className="py-3 px-6 text-center">Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="text-gray-600 text-sm">
             {projects.map((project) => (
-              <tr key={project.id}>
-                <td className="px-6 py-4 whitespace-nowrap">{project.name}</td>
-                <td className="px-6 py-4">{project.description}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {project.repository_url && (
-                    <a
-                      href={project.repository_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 hover:underline"
-                    >
-                      Repository
-                    </a>
-                  )}
+              <tr key={project.id} className="border-b border-gray-200 hover:bg-gray-100">
+                <td className="py-3 px-6 text-left">{project.name}</td>
+                <td className="py-3 px-6 text-left">{project.description || '-'}</td>
+                <td className="py-3 px-6 text-left">
+                  <div className="flex items-center space-x-4">
+                    {project.repository_url && (
+                      <a
+                        href={project.repository_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 hover:underline flex items-center"
+                      >
+                        <LinkIcon className="h-4 w-4 mr-1" />
+                        Repo
+                      </a>
+                    )}
+                    {project.live_url && (
+                      <a
+                        href={project.live_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-green-600 hover:text-green-800 hover:underline flex items-center"
+                      >
+                        <LinkIcon className="h-4 w-4 mr-1" />
+                        Live
+                      </a>
+                    )}
+                  </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {project.live_url && (
-                    <a
-                      href={project.live_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 hover:underline"
+                <td className="py-3 px-6 text-center">
+                  <div className="flex item-center justify-center">
+                    <button
+                      onClick={() => handleView(project)}
+                      className="w-4 mr-4 transform hover:text-blue-500 hover:scale-110"
                     >
-                      Live Demo
-                    </a>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap space-x-2">
-                  <button
-                    onClick={() => {
-                      setEditingProject(project);
-                      setIsEditing(true);
-                      setIsViewModalOpen(true);
-                    }}
-                    className="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                    title="View Project"
-                  >
-                    <EyeIcon className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditingProject({
-                        name: project.name,
-                        description: project.description,
-                        repository_url: project.repository_url || '',
-                        live_url: project.live_url || ''
-                      });
-                      setCurrentProjectId(project.id);
-                      setIsEditing(true);
-                      setShowForm(true);
-                    }}
-                    className="text-green-600 hover:text-green-900"
-                  >
-                    <PencilIcon className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(project.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </button>
+                      <EyeIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleEdit(project)}
+                      className="w-4 mr-4 transform hover:text-yellow-500 hover:scale-110"
+                    >
+                      <PencilIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(project.id)}
+                      className="w-4 transform hover:text-red-500 hover:scale-110"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -274,20 +234,24 @@ export default function ProjectsPage() {
         </table>
       </div>
 
-      {/* Add/Edit Project Modal */}
+      {/* Add/Edit Modal */}
       <Modal
         isOpen={showForm}
-        onClose={() => setShowForm(false)}
-        title={isEditing ? "Edit Project" : "Add Project"}
+        onClose={() => {
+          setShowForm(false);
+          setEditingProject(emptyProject);
+          setIsEditing(false);
+          setCurrentProjectId(null);
+        }}
+        title={isEditing ? 'Edit Project' : 'Add Project'}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              Project Name
+              Name
             </label>
             <input
               type="text"
-              name="name"
               id="name"
               value={editingProject.name}
               onChange={(e) => setEditingProject({ ...editingProject, name: e.target.value })}
@@ -295,108 +259,112 @@ export default function ProjectsPage() {
               required
             />
           </div>
+
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700">
               Description
             </label>
             <textarea
-              name="description"
               id="description"
-              rows={3}
               value={editingProject.description}
               onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })}
+              rows={3}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-              required
             />
           </div>
+
           <div>
             <label htmlFor="repository_url" className="block text-sm font-medium text-gray-700">
               Repository URL
             </label>
             <input
               type="url"
-              name="repository_url"
               id="repository_url"
               value={editingProject.repository_url}
               onChange={(e) => setEditingProject({ ...editingProject, repository_url: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             />
           </div>
+
           <div>
             <label htmlFor="live_url" className="block text-sm font-medium text-gray-700">
               Live URL
             </label>
             <input
               type="url"
-              name="live_url"
               id="live_url"
               value={editingProject.live_url}
               onChange={(e) => setEditingProject({ ...editingProject, live_url: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
             />
           </div>
-          <div className="flex justify-end space-x-3">
+
+          <div className="flex justify-end space-x-3 pt-5">
             <button
               type="button"
-              onClick={() => setShowForm(false)}
-              className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              onClick={() => {
+                setShowForm(false);
+                setEditingProject(emptyProject);
+                setIsEditing(false);
+                setCurrentProjectId(null);
+              }}
+              className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              {isSubmitting ? 'Saving...' : isEditing ? 'Save Changes' : 'Add Project'}
+              {isSubmitting ? 'Saving...' : isEditing ? 'Update' : 'Create'}
             </button>
           </div>
         </form>
       </Modal>
 
-      {/* View Project Modal */}
+      {/* View Modal */}
       <Modal
         isOpen={isViewModalOpen}
-        onClose={() => setIsViewModalOpen(false)}
-        title="View Project"
+        onClose={() => {
+          setIsViewModalOpen(false);
+          setEditingProject(emptyProject);
+        }}
+        title="Project Details"
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Name</label>
-            <p className="mt-1 text-sm text-gray-900">{editingProject.name}</p>
+            <h3 className="text-lg font-medium text-gray-900">{editingProject.name}</h3>
+            <p className="mt-1 text-sm text-gray-500">{editingProject.description || 'No description'}</p>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Description</label>
-            <p className="mt-1 text-sm text-gray-900">{editingProject.description || 'No description'}</p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Repository URL</label>
-            {editingProject.repository_url ? (
-              <a 
-                href={editingProject.repository_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-1 text-sm text-blue-600 hover:text-blue-800 hover:underline block"
-              >
-                {editingProject.repository_url}
-              </a>
-            ) : (
-              <p className="mt-1 text-sm text-gray-400">No repository URL provided</p>
+
+          <div className="space-y-2">
+            {editingProject.repository_url && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700">Repository URL</h4>
+                <a
+                  href={editingProject.repository_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {editingProject.repository_url}
+                </a>
+              </div>
             )}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Live URL</label>
-            {editingProject.live_url ? (
-              <a 
-                href={editingProject.live_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-1 text-sm text-blue-600 hover:text-blue-800 hover:underline block"
-              >
-                {editingProject.live_url}
-              </a>
-            ) : (
-              <p className="mt-1 text-sm text-gray-400">No live URL provided</p>
+
+            {editingProject.live_url && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700">Live URL</h4>
+                <a
+                  href={editingProject.live_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  {editingProject.live_url}
+                </a>
+              </div>
             )}
           </div>
         </div>

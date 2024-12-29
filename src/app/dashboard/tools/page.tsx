@@ -226,101 +226,71 @@ export default function ToolsPage() {
   };
 
   if (isLoading) {
-    return <div className="text-center">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Tools</h1>
+        <button
+          onClick={() => {
+            setEditingTool(emptyTool);
+            setShowForm(true);
+          }}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Add Tool
+        </button>
+      </div>
+
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
         </div>
       )}
 
-      <div className="sm:flex sm:items-center">
-        <div className="sm:flex-auto">
-          <h1 className="text-xl font-semibold text-gray-900">Tools</h1>
-          <p className="mt-2 text-sm text-gray-700">
-            A list of all your tools and their details.
-          </p>
-        </div>
-        <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-          <button
-            onClick={() => {
-              setEditingTool(emptyTool);
-              setShowForm(true);
-            }}
-            className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 sm:w-auto"
-          >
-            Add Tool
-          </button>
-        </div>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-300">
+      <div className="bg-white shadow-md rounded my-6">
+        <table className="min-w-full table-auto">
           <thead>
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">URL</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+              <th className="py-3 px-6 text-left">Name</th>
+              <th className="py-3 px-6 text-left">Description</th>
+              <th className="py-3 px-6 text-left">Category</th>
+              <th className="py-3 px-6 text-center">Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="text-gray-600 text-sm">
             {tools.map((tool) => (
-              <tr key={tool.id}>
-                <td className="px-6 py-4 whitespace-nowrap">{tool.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {tool.category?.name || 'Uncategorized'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {tool.description || '-'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {tool.url ? (
-                    <a 
-                      href={tool.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 hover:underline"
+              <tr key={tool.id} className="border-b border-gray-200 hover:bg-gray-100">
+                <td className="py-3 px-6 text-left">{tool.name}</td>
+                <td className="py-3 px-6 text-left">{tool.description}</td>
+                <td className="py-3 px-6 text-left">{tool.category?.name}</td>
+                <td className="py-3 px-6 text-center">
+                  <div className="flex item-center justify-center">
+                    <button
+                      onClick={() => handleView(tool)}
+                      className="w-4 mr-4 transform hover:text-blue-500 hover:scale-110"
                     >
-                      {tool.url}
-                    </a>
-                  ) : (
-                    <span className="text-gray-400">No URL</span>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap space-x-2">
-                  <button
-                    onClick={() => handleView(tool)}
-                    className="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                    title="View Tool"
-                  >
-                    <EyeIcon className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                  <button
-                    onClick={() => handleEdit(tool)}
-                    className="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    <PencilIcon className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(tool.id)}
-                    className="inline-flex items-center p-1 border border-transparent rounded-full shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                  >
-                    <TrashIcon className="h-4 w-4" aria-hidden="true" />
-                  </button>
+                      <EyeIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleEdit(tool)}
+                      className="w-4 mr-4 transform hover:text-yellow-500 hover:scale-110"
+                    >
+                      <PencilIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(tool.id)}
+                      className="w-4 transform hover:text-red-500 hover:scale-110"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

@@ -150,78 +150,75 @@ export default function EmailPage() {
     setIsEditModalOpen(true);
   };
 
+  const handleView = (email: Email) => {
+    setEditingEmail(email);
+    setIsViewModalOpen(true);
+  };
+
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Emails</h2>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Email Accounts</h1>
         <button
           onClick={() => {
             setEditingEmail(emptyEmail);
             setShowForm(true);
           }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
         >
           Add Email
         </button>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-300">
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
+
+      <div className="bg-white shadow-md rounded my-6">
+        <table className="min-w-full table-auto">
           <thead>
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+              <th className="py-3 px-6 text-left">Email</th>
+              <th className="py-3 px-6 text-left">Description</th>
+              <th className="py-3 px-6 text-center">Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="text-gray-600 text-sm">
             {emails.map((email) => (
-              <tr key={email.id}>
-                <td className="px-6 py-4 whitespace-nowrap">{email.email}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {email.description || <span className="text-gray-400">No description</span>}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap space-x-2">
-                  <button
-                    onClick={() => {
-                      setEditingEmail(email);
-                      setIsViewModalOpen(true);
-                    }}
-                    className="text-blue-600 hover:text-blue-900"
-                  >
-                    <EyeIcon className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => handleEdit(email)}
-                    className="text-green-600 hover:text-green-900"
-                  >
-                    <PencilIcon className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(email.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </button>
+              <tr key={email.id} className="border-b border-gray-200 hover:bg-gray-100">
+                <td className="py-3 px-6 text-left">{email.email}</td>
+                <td className="py-3 px-6 text-left">{email.description || '-'}</td>
+                <td className="py-3 px-6 text-center">
+                  <div className="flex item-center justify-center">
+                    <button
+                      onClick={() => handleView(email)}
+                      className="w-4 mr-4 transform hover:text-blue-500 hover:scale-110"
+                    >
+                      <EyeIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleEdit(email)}
+                      className="w-4 mr-4 transform hover:text-yellow-500 hover:scale-110"
+                    >
+                      <PencilIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(email.id)}
+                      className="w-4 transform hover:text-red-500 hover:scale-110"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

@@ -69,3 +69,17 @@ export type Activity = {
   created_at: string;
   updated_at?: string;
 };
+
+export type Domain = {
+  id: number;
+  domain_name: string;
+  registrar?: string;
+  date_of_purchase?: string;
+  expire_date?: string;
+  login?: string;
+  password?: string;
+  on_cloudflare?: boolean;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+};
